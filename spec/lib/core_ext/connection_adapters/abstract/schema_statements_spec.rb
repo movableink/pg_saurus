@@ -11,7 +11,7 @@ describe ActiveRecord::ConnectionAdapters::SchemaStatements do
         query.should == expected_query
       end
 
-      ActiveRecord::Migration.add_index :users, :phone_number, :concurrently => true
+      ActiveRecord::Migration.add_index :users, :phone_number, concurrently: true
       ActiveRecord::Migration.process_postponed_queries
     end
 
@@ -19,7 +19,7 @@ describe ActiveRecord::ConnectionAdapters::SchemaStatements do
       expect(ActiveRecord::Base.connection).
         to receive(:index_exists?).once.and_return(true)
 
-      ActiveRecord::Migration.add_index :users, :phone_number, :concurrently => true
+      ActiveRecord::Migration.add_index :users, :phone_number, concurrently: true
 
       expect {
         ActiveRecord::Migration.process_postponed_queries
