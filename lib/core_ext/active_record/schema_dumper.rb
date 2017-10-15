@@ -29,7 +29,7 @@ module ActiveRecord #:nodoc:
           #  Append :where clause if a partial index
           statement_parts << ('where: ' + index.where.inspect) if index.where
 
-          statement_parts << ('using: ' + index.access_method.inspect)
+          statement_parts << ('using: ' + index.access_method.to_sym.inspect)
 
           '  ' + statement_parts.join(', ')
         end
