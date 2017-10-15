@@ -4,7 +4,7 @@ module ActiveRecord
       # Regexp used to find the function name and function argument of a
       # function call
       FUNCTIONAL_INDEX_REGEXP = /(\w+)\(((?:'.+'(?:::\w+)?, *)*)(\w+)\)/
-
+      TSVECTOR_INDEX_REGEXP = /^to_tsvector/
 
       # Redefine original add_index method to handle :concurrently option.
       #
@@ -132,7 +132,9 @@ module ActiveRecord
       # Override super method to provide support for expression column names.
       def quoted_columns_for_index(column_names, options = {})
         column_names.map do |name|
-          if name =~ FUNCTIONAL_INDEX_REGEXP
+          if name =~ TSVECTOR_INDEX_REGEXP
+            name
+          elsif name =~ FUNCTIONAL_INDEX_REGEXP
             "#{$1}(#{$2}#{quote_column_name($3)})"
           else
             quote_column_name(name)

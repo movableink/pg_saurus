@@ -1,6 +1,21 @@
 require 'spec_helper'
 
 describe ActiveRecord::ConnectionAdapters::SchemaStatements do
+  describe "#add_index with expression" do
+    let(:expected_query) do
+      'CREATE  INDEX "index_users_on_tsvector_phone_number" ON "users" USING gin (to_tsvector(\'english\', phone_number))'
+    end
+
+    it 'creates index' do
+      expect(ActiveRecord::Base.connection).to receive(:execute) do |query|
+        query.should == expected_query
+      end
+
+      ActiveRecord::Migration.add_index :users, "to_tsvector('english', phone_number)", name: 'index_users_on_tsvector_phone_number', using: 'gin'
+      ActiveRecord::Migration.process_postponed_queries
+    end
+  end
+
   describe '#add_index' do
     let(:expected_query) do
       'CREATE  INDEX CONCURRENTLY "index_users_on_phone_number" ON "users" ("phone_number")'
