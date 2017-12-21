@@ -21,10 +21,12 @@ module PgSaurus::ConnectionAdapters::PostgreSQLAdapter::FunctionMethods
        p.oid AS "Oid"
       FROM pg_catalog.pg_proc p
            LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+           LEFT JOIN pg_depend d ON d.objid = p.oid AND d.deptype = 'e'
       WHERE pg_catalog.pg_function_is_visible(p.oid)
             AND n.nspname <> 'pg_catalog'
             AND n.nspname <> 'information_schema'
             AND p.proisagg <> TRUE
+            AND d.objid IS NULL
       ORDER BY 1, 2, 3, 4;
     SQL
     res.inject([]) do |buffer, row|
