@@ -48,8 +48,8 @@ describe ActiveRecord::SchemaDumper do
 
     context "Extensions" do
       it 'dumps loaded extension modules' do
-        @dump.should =~ /create_extension "fuzzystrmatch", version: "\d+\.\d+"/
-        @dump.should =~ /create_extension "btree_gist", schema_name: "demography", version: "\d+\.\d+"/
+        @dump.should =~ /create_extension "fuzzystrmatch"/
+        @dump.should =~ /create_extension "btree_gist", schema_name: "demography"/
       end
     end
 
@@ -102,7 +102,7 @@ describe ActiveRecord::SchemaDumper do
     context 'Functions' do
       it 'dumps function definitions' do
         @dump.should =~ /create_function 'pets_not_empty\(\)'/
-        @dump.should =~ /:schema=>"public"/
+        @dump.should =~ /schema: 'public'/
       end
 
       it 'dumps function definitions with arguments' do

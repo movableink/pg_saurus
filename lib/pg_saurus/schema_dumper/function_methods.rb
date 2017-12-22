@@ -17,13 +17,9 @@ module PgSaurus::SchemaDumper::FunctionMethods
       name = "#{function.name}(#{function.arguments.join(', ')})"
       statement = "  create_function '#{name}', '#{function.returning}', <<-FUNCTION_DEFINITION.gsub(/^[\s]{4}/, '')"
 
-      options = {}
-      options[:schema] = function.schema
-      options[:replace] = false if function.replace == false
-      options[:language] = function.language if function.language != 'plpgsql'
-      if options.keys.size > 0
-        statement << ", #{options.inspect}"
-      end
+      statement << ", schema: '#{function.schema}'" if function.schema
+      statement << ", language: '#{language}'" if function.language != 'plpgsql'
+      statement << ", replace: #{function.replace}" if function.replace == false
 
       statement << "\n#{definition}"
       statement << "\n  FUNCTION_DEFINITION\n\n"
