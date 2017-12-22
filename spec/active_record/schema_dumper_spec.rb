@@ -101,7 +101,12 @@ describe ActiveRecord::SchemaDumper do
 
     context 'Functions' do
       it 'dumps function definitions' do
-        @dump.should =~ /create_function 'public.pets_not_empty\(\)'/
+        @dump.should =~ /create_function 'pets_not_empty\(\)'/
+        @dump.should =~ /:schema=>"public"/
+      end
+
+      it 'dumps function definitions with arguments' do
+        @dump.should =~ /create_function 'get_pet\(petname character varying, pet_type character varying\)'/
       end
     end
 

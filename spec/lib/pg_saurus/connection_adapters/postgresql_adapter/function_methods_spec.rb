@@ -75,6 +75,29 @@ describe PgSaurus::ConnectionAdapters::PostgreSQLAdapter::FunctionMethods do
         END;
       FUNCTION
     end
+
+    it "function with arguments" do
+      sql = <<-SQL.gsub(/^[ ]{8}/, "")
+        CREATE OR REPLACE FUNCTION get_pet(asdf character varying)
+          RETURNS character varying
+          LANGUAGE plpgsql
+        AS $function$
+        BEGIN
+          RETURN 'corgi';
+        END;
+        $function$
+      SQL
+
+      expect(connection).to receive(:execute).with(sql)
+
+      connection.create_function "get_pet(asdf character varying)",
+                                 'character varying',
+                                 <<-FUNCTION.gsub(/^[ ]{8}/, ""), replace: true
+        BEGIN
+          RETURN 'corgi';
+        END;
+      FUNCTION
+    end
   end
 
   it ".drop_function" do
@@ -84,7 +107,7 @@ describe PgSaurus::ConnectionAdapters::PostgreSQLAdapter::FunctionMethods do
   end
 
   it ".functions" do
-    function = connection.functions.find{ |f| f.name == "public.pets_not_empty()" }
+    function = connection.functions.find{ |f| f.name == "pets_not_empty" && f.schema == "public" }
 
     expect(function).not_to be_nil
     expect(function.returning).to eq("boolean")

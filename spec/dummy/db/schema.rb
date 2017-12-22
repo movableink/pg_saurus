@@ -11,14 +11,14 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150714003209) do
+ActiveRecord::Schema.define(version: 20171221121104) do
 
   create_schema "demography"
   create_schema "later"
   create_schema "latest"
 
   create_extension "fuzzystrmatch", version: "1.1"
-  create_extension "btree_gist", schema_name: "demography", version: "1.2"
+  create_extension "btree_gist", schema_name: "demography", version: "1.5"
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -122,7 +122,13 @@ ActiveRecord::Schema.define(version: 20150714003209) do
    FROM demography.citizens;
   SQL
 
-  create_function 'public.pets_not_empty()', :boolean, <<-FUNCTION_DEFINITION.gsub(/^[ ]{4}/, '')
+  create_function 'get_pet(petname character varying, pet_type character varying)', 'character varying', <<-FUNCTION_DEFINITION.gsub(/^[ ]{4}/, ''), {:schema=>"public"}
+    BEGIN
+      RETURN "corgi";
+    END;
+  FUNCTION_DEFINITION
+
+  create_function 'pets_not_empty()', 'boolean', <<-FUNCTION_DEFINITION.gsub(/^[ ]{4}/, ''), {:schema=>"public"}
     BEGIN
       IF (SELECT COUNT(*) FROM pets) > 0
       THEN
@@ -133,7 +139,7 @@ ActiveRecord::Schema.define(version: 20150714003209) do
     END;
   FUNCTION_DEFINITION
 
-  create_function 'public.pets_not_empty_trigger_proc()', :trigger, <<-FUNCTION_DEFINITION.gsub(/^[ ]{4}/, '')
+  create_function 'pets_not_empty_trigger_proc()', 'trigger', <<-FUNCTION_DEFINITION.gsub(/^[ ]{4}/, ''), {:schema=>"public"}
     BEGIN
       RETURN null;
     END;

@@ -5,6 +5,9 @@ module PgSaurus::ConnectionAdapters
                                          :definition,
                                          :function_type,
                                          :language,
+                                         :arguments,
+                                         :replace,
+                                         :schema,
                                          :oid )
   end
 end

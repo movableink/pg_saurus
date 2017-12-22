@@ -12,7 +12,11 @@ module PgSaurus::ConnectionAdapters::PostgreSQLAdapter::FunctionMethods
     res = select_all <<-SQL
       SELECT n.nspname AS "Schema",
         p.proname AS "Name",
+        l.lanname AS "Language",
+        p.prosrc AS "Source",
+        pg_get_functiondef(p.oid) ILIKE '%CREATE OR REPLACE%' AS "Replace",
         pg_catalog.pg_get_function_result(p.oid) AS "Returning",
+        pg_get_function_arguments(p.oid) AS "Arguments",
        CASE
         WHEN p.proiswindow                                           THEN 'window'
         WHEN p.prorettype = 'pg_catalog.trigger'::pg_catalog.regtype THEN 'trigger'
@@ -22,6 +26,7 @@ module PgSaurus::ConnectionAdapters::PostgreSQLAdapter::FunctionMethods
       FROM pg_catalog.pg_proc p
            LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
            LEFT JOIN pg_depend d ON d.objid = p.oid AND d.deptype = 'e'
+           LEFT JOIN pg_catalog.pg_language l ON p.prolang = l.oid
       WHERE pg_catalog.pg_function_is_visible(p.oid)
             AND n.nspname <> 'pg_catalog'
             AND n.nspname <> 'information_schema'
@@ -29,42 +34,44 @@ module PgSaurus::ConnectionAdapters::PostgreSQLAdapter::FunctionMethods
             AND d.objid IS NULL
       ORDER BY 1, 2, 3, 4;
     SQL
-    res.inject([]) do |buffer, row|
+    res.map do |row|
       returning     = row['Returning']
       function_type = row['Type']
+      name          = row['Name']
+      definition    = row['Source']
+      language      = row['Language']
       oid           = row['Oid']
+      or_replace    = row['Replace'] != 'f'
+      schema        = row['Schema']
 
-      function_str = select_value("SELECT pg_get_functiondef(#{oid});")
+      # in format ['arg_a character varying', 'arg_b integer', ...]
+      arguments = row['Arguments'].split(", ")
 
-      name       = parse_function_name(function_str)
-      language   = parse_function_language(function_str)
-      definition = parse_function_definition(function_str)
+      next unless definition
 
-      if definition
-        buffer << ::PgSaurus::ConnectionAdapters::FunctionDefinition.new(name,
-                                                                         returning,
-                                                                         definition.strip,
-                                                                         function_type,
-                                                                         language,
-                                                                         oid)
-      end
-      buffer
-    end
+      ::PgSaurus::ConnectionAdapters::FunctionDefinition.new(name,
+                                                             returning,
+                                                             definition.strip,
+                                                             function_type,
+                                                             language,
+                                                             arguments,
+                                                             or_replace,
+                                                             schema,
+                                                             oid)
+    end.compact
   end
 
   # Create a new database function.
   def create_function(function_name, returning, definition, options = {})
-
     function_name = full_function_name(function_name, options)
     language      = options[:language] || 'plpgsql'
-    replace       = if options[:replace] == false
-                      ''
-                    else
-                      'OR REPLACE '
-                    end
+
+    create = 'CREATE'
+    create << ' OR REPLACE' unless options[:replace] == false
+    create << ' FUNCTION'
 
     sql = <<-SQL.gsub(/^[ ]{6}/, "")
-      CREATE #{replace}FUNCTION #{function_name}
+      #{create} #{function_name}
         RETURNS #{returning}
         LANGUAGE #{language}
       AS $function$
@@ -81,24 +88,6 @@ module PgSaurus::ConnectionAdapters::PostgreSQLAdapter::FunctionMethods
 
     execute "DROP FUNCTION #{function_name}"
   end
-
-  # Retrieve the function name from the function SQL.
-  def parse_function_name(function_str)
-    function_str.split("\n").find { |line| line =~ /^CREATE[\s\S]+FUNCTION/ }.split(' ').last
-  end
-  private :parse_function_name
-
-  # Retrieve the function language from the function SQL.
-  def parse_function_language(function_str)
-    function_str.split("\n").find { |line| line =~ /LANGUAGE/ }.split(' ').last
-  end
-  private :parse_function_language
-
-  # Retrieve the function definition from the function SQL.
-  def parse_function_definition(function_str)
-    function_str[/#{Regexp.escape("AS $function$\n")}(.*?)#{Regexp.escape("$function$")}/m, 1]
-  end
-  private :parse_function_definition
 
   # Write out the fully qualified function name if the :schema option is passed.
   def full_function_name(function_name, options)
