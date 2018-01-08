@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20171221121104) do
+ActiveRecord::Schema.define(version: 20180108035548) do
 
   create_schema "demography"
   create_schema "later"
