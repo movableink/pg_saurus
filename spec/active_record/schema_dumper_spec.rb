@@ -108,6 +108,11 @@ describe ActiveRecord::SchemaDumper do
       it 'dumps function definitions with arguments' do
         @dump.should =~ /create_function 'get_pet\(petname character varying, pet_type character varying\)'/
       end
+
+      it 'should not dump function definitions with non plpgsql' do
+        @dump.should_not =~ /create_function 'pets_can_speak\(\)'/
+        @dump.should_not =~ /language: 'sql'/
+      end
     end
 
     context 'Triggers' do

@@ -13,12 +13,12 @@ module PgSaurus::SchemaDumper::FunctionMethods
   # Writes out a command to create each detected function.
   def dump_functions(stream)
     @connection.functions.each do |function|
+      next unless function.language == 'plpgsql'
       definition = function.definition.split("\n").map{|line| "    #{line}" }.join("\n")
       name = "#{function.name}(#{function.arguments.join(', ')})"
       statement = "  create_function '#{name}', '#{function.returning}', <<-FUNCTION_DEFINITION.gsub(/^[\s]{4}/, '')"
 
       statement << ", schema: '#{function.schema}'" if function.schema
-      statement << ", language: '#{language}'" if function.language != 'plpgsql'
       statement << ", replace: #{function.replace}" if function.replace == false
 
       statement << "\n#{definition}"
